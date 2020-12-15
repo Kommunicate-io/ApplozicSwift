@@ -52,10 +52,13 @@ public final class ALKChatCell: MGSwipeTableCell, Localizable {
 
     struct Padding {
         struct Email {
-            static let top: CGFloat = 4
+            static let top: CGFloat = 6
             static let left: CGFloat = 12
-            static let height: CGFloat = 15
-            static let width: CGFloat = 24
+            static let height: CGFloat = 12
+            static let width: CGFloat = 12
+        }
+        struct Location {
+            static let leading: CGFloat = 4
         }
     }
 
@@ -111,7 +114,7 @@ public final class ALKChatCell: MGSwipeTableCell, Localizable {
 
     private var sourceIcon: UIImageView = {
         let imv = UIImageView()
-        imv.contentMode = .scaleAspectFill
+        imv.contentMode = .scaleAspectFit
         imv.clipsToBounds = true
         imv.isHidden = true
         return imv
@@ -150,6 +153,10 @@ public final class ALKChatCell: MGSwipeTableCell, Localizable {
         view.backgroundColor = UIColor.onlineGreen()
         return view
     }()
+
+    private lazy var locationLabelLeadingConstraint =
+        locationLabel.leadingAnchor.constraint(equalTo: sourceIcon.trailingAnchor, constant: 0)
+
 
     public weak var chatCellDelegate: ALKChatCellDelegate?
 
@@ -392,7 +399,7 @@ public final class ALKChatCell: MGSwipeTableCell, Localizable {
         // setup constraint of mood
         locationLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 2).isActive = true
         locationLabel.heightAnchor.constraint(equalToConstant: 20).isActive = true
-        locationLabel.leadingAnchor.constraint(equalTo: sourceIcon.trailingAnchor, constant: 0).isActive = true
+        locationLabelLeadingConstraint.isActive = true
         locationLabel.trailingAnchor.constraint(equalTo: muteIcon.leadingAnchor, constant: -8).isActive = true
 
         // setup constraint of line
@@ -475,6 +482,7 @@ public final class ALKChatCell: MGSwipeTableCell, Localizable {
         sourceIcon.isHidden = !flag
         let sourceIconWidth = flag ? Padding.Email.width:0
         sourceIcon.constraint(withIdentifier: ConstraintIdentifier.iconWidthIdentifier.rawValue)?.constant = sourceIconWidth
+        locationLabelLeadingConstraint.constant = flag ? Padding.Location.leading:0
     }
 }
 
