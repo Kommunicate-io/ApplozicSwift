@@ -109,12 +109,11 @@ public final class ALKChatCell: MGSwipeTableCell, Localizable {
         return imageView
     }()
 
-    private var emailIcon: UIImageView = {
+    private var sourceIcon: UIImageView = {
         let imv = UIImageView()
         imv.contentMode = .scaleAspectFill
         imv.clipsToBounds = true
         imv.isHidden = true
-        imv.image = UIImage(named: "alk_email_icon", in: Bundle.applozic, compatibleWith: nil)
         return imv
     }()
 
@@ -190,7 +189,7 @@ public final class ALKChatCell: MGSwipeTableCell, Localizable {
 
     private func isConversationMuted(viewModel: ALKChatViewModelProtocol) -> Bool {
         if let channelKey = viewModel.channelKey,
-            let channel = ALChannelService().getChannelByKey(channelKey)
+           let channel = ALChannelService().getChannelByKey(channelKey)
         {
             if channel.isNotificationMuted() {
                 return true
@@ -198,7 +197,7 @@ public final class ALKChatCell: MGSwipeTableCell, Localizable {
                 return false
             }
         } else if let contactId = viewModel.contactId,
-            let contact = ALContactService().loadContact(byKey: "userId", value: contactId)
+                  let contact = ALContactService().loadContact(byKey: "userId", value: contactId)
         {
             if contact.isNotificationMuted() {
                 return true
@@ -236,18 +235,11 @@ public final class ALKChatCell: MGSwipeTableCell, Localizable {
         locationLabel.text = viewModel.theLastMessage
         muteIcon.isHidden = !isConversationMuted(viewModel: viewModel)
 
-        if viewModel.messageType == .email {
-            emailIcon.isHidden = false
-            emailIcon.constraint(withIdentifier: ConstraintIdentifier.iconWidthIdentifier.rawValue)?.constant = Padding.Email.width
-        } else {
-            emailIcon.isHidden = true
-            emailIcon.constraint(withIdentifier: ConstraintIdentifier.iconWidthIdentifier.rawValue)?.constant = 0
-        }
-
         if !disableSwipe {
             setupLeftSwippableButtons(viewModel)
             setupRightSwippableButtons(viewModel)
         }
+        checkAndShowConversationSource(viewModel)
 
         // get unread count of message and set badgenumber
         let unreadMsgCount = viewModel.totalNumberOfUnreadMessages
@@ -263,7 +255,7 @@ public final class ALKChatCell: MGSwipeTableCell, Localizable {
         if !viewModel.isGroupChat {
             let contactService = ALContactService()
             guard let contactId = viewModel.contactId,
-                let contact = contactService.loadContact(byKey: "userId", value: contactId)
+                  let contact = contactService.loadContact(byKey: "userId", value: contactId)
             else {
                 return
             }
@@ -378,7 +370,7 @@ public final class ALKChatCell: MGSwipeTableCell, Localizable {
     }
 
     private func setupConstraints() {
-        contentView.addViewsForAutolayout(views: [avatarImageView, nameLabel, locationLabel, lineView, muteIcon, badgeNumberView, timeLabel, onlineStatusView, emailIcon])
+        contentView.addViewsForAutolayout(views: [avatarImageView, nameLabel, locationLabel, lineView, muteIcon, badgeNumberView, timeLabel, onlineStatusView, sourceIcon])
 
         // setup constraint of imageProfile
         avatarImageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 17.0).isActive = true
@@ -392,15 +384,15 @@ public final class ALKChatCell: MGSwipeTableCell, Localizable {
         nameLabel.leadingAnchor.constraint(equalTo: avatarImageView.trailingAnchor, constant: 12).isActive = true
         nameLabel.trailingAnchor.constraint(equalTo: timeLabel.leadingAnchor, constant: -5).isActive = true
 
-        emailIcon.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: Padding.Email.top).isActive = true
-        emailIcon.heightAnchor.constraint(equalToConstant: Padding.Email.height).isActive = true
-        emailIcon.leadingAnchor.constraint(equalTo: avatarImageView.trailingAnchor, constant: Padding.Email.left).isActive = true
-        emailIcon.widthAnchor.constraintEqualToAnchor(constant: 0, identifier: ConstraintIdentifier.iconWidthIdentifier.rawValue).isActive = true
+        sourceIcon.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: Padding.Email.top).isActive = true
+        sourceIcon.heightAnchor.constraint(equalToConstant: Padding.Email.height).isActive = true
+        sourceIcon.leadingAnchor.constraint(equalTo: avatarImageView.trailingAnchor, constant: Padding.Email.left).isActive = true
+        sourceIcon.widthAnchor.constraintEqualToAnchor(constant: 0, identifier: ConstraintIdentifier.iconWidthIdentifier.rawValue).isActive = true
 
         // setup constraint of mood
         locationLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 2).isActive = true
         locationLabel.heightAnchor.constraint(equalToConstant: 20).isActive = true
-        locationLabel.leadingAnchor.constraint(equalTo: emailIcon.trailingAnchor, constant: 0).isActive = true
+        locationLabel.leadingAnchor.constraint(equalTo: sourceIcon.trailingAnchor, constant: 0).isActive = true
         locationLabel.trailingAnchor.constraint(equalTo: muteIcon.leadingAnchor, constant: -8).isActive = true
 
         // setup constraint of line
@@ -464,7 +456,40 @@ public final class ALKChatCell: MGSwipeTableCell, Localizable {
         return UIColor(netHex: colors[randomNum])
     }
 
-    func randomInt(min: Int, max: Int) -> Int {
+    private func randomInt(min: Int, max: Int) -> Int {
         return min + Int(arc4random_uniform(UInt32(max - min + 1)))
+    }
+
+    private func checkAndShowConversationSource(_ viewModel: ALKChatViewModelProtocol) {
+        guard let channel = ALChannelService().getChannelByKey(viewModel.channelKey),
+              let source = channel.conversationSource,
+              source == .facebook else {
+            showSourceIcon(false)
+            return
+        }
+        sourceIcon.image = UIImage(named: "fb_icon", in: Bundle.applozic, compatibleWith: nil)
+        showSourceIcon(true)
+    }
+
+    private func showSourceIcon(_ flag: Bool) {
+        sourceIcon.isHidden = !flag
+        let sourceIconWidth = flag ? Padding.Email.width:0
+        sourceIcon.constraint(withIdentifier: ConstraintIdentifier.iconWidthIdentifier.rawValue)?.constant = sourceIconWidth
+    }
+}
+
+extension ALChannel {
+    static let ConversationSource = "source"
+
+    enum Source: String {
+        case facebook = "FACEBOOK"
+    }
+
+    var conversationSource: Source? {
+        guard type == Int16(SUPPORT_GROUP.rawValue),
+              let source = metadata?[ALChannel.ConversationSource] as? String else {
+            return nil
+        }
+        return Source(rawValue: source)
     }
 }
