@@ -350,6 +350,8 @@ extension ALMessage {
         var contentPrefix = String()
         if let index = fileMeta.contentType.firstIndex(of: "/") {
             contentPrefix = String(fileMeta.contentType.prefix(upTo: index))
+        } else {
+            return nil
         }
         
         switch contentPrefix {
