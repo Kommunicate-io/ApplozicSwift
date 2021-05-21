@@ -345,13 +345,12 @@ extension ALMessage {
     }
 
     private func getAttachmentType() -> ALKMessageType? {
-        guard let fileMeta = fileMeta else { return nil }
         
-        var contentPrefix = String()
-        if let index = fileMeta.contentType.firstIndex(of: "/") {
-            contentPrefix = String(fileMeta.contentType.prefix(upTo: index))
-        }
+        guard let fileMeta = fileMeta, let contentType = fileMeta.contentType else { return nil }
+        guard let index = contentType.firstIndex(of: "/"), (index < contentType.endIndex) else { return nil }
         
+        let contentPrefix = String(contentType.prefix(upTo: index))
+
         switch contentPrefix {
         case "image":
             return .photo
