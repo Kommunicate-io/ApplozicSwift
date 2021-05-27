@@ -265,10 +265,9 @@ extension ALMessage {
     }
 
     var size: Int64 {
-        guard let fileMeta = fileMeta, let size = Int64(fileMeta.size) else {
-            return 0
-        }
-        return size
+        guard let fileMeta = fileMeta, let size = fileMeta.size else { return 0 }
+        guard let sizeInt = Int64(size) else { return 0 }
+        return sizeInt
     }
 
     var thumbnailURL: URL? {
